@@ -27,7 +27,9 @@ If you want to see details about the CA cert, including its associated JITP temp
 aws iot describe-ca-certificate --certificate-id 08e2b95c05656320767287f69ce12b48b7b5043f85d1c5fa6b8736e4190a7c5e
 ```
 
-Now it's time to generate some certs for your new device in order to test that it gets provisioned "just in time" on AWS IoT. Generating certs for a device is what could be done during the manufacturing / production process, or by a third-party that buys the nRF91 chips and uses their own CA. Here's how it's done using openssl from your terminal:
+Now it's time to generate some certs for your new device in order to test that it gets provisioned "just in time" on AWS IoT. Generating certs for a device could be done during the manufacturing / production process, or by a third-party that buys the nRF91 chips and uses their own CA. The certs would then be flashed onto the device before shipping.
+
+Here's how it's done using openssl from your terminal:
 
 ```
 openssl genrsa -out deviceCert.key 2048
