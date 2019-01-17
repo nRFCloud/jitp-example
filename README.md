@@ -58,6 +58,12 @@ connect
 message jitp_test {"success":"JITP works!"}
 ```
 
+_Note_: this script uses the [ATS endpoint](https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication) for Nordic Semiconductor's main AWS account. If you want to try this script on a different account, replace the `host` in the script with `endpointAddress` returned by this CLI command:
+
+```
+aws iot describe-endpoint --endpoint-type iot:Data-ATS
+```
+
 You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
 
 Running `node scripts/connect-and-publish.js` again will not re-provision it, so the JITP process is essentially idempotent.

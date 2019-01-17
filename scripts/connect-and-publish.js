@@ -6,7 +6,8 @@ let device = iot.device({
   caPath: "security/AmazonRootCA1.pem",
   // This does not have to be the Thing Id or Thing Name.
   clientId: "someUniqueId",
-  // NOTE: using the ATS endpoint. See https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication.
+  // NOTE: using Nordic's ATS endpoint. See https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication.
+  // To find the ATS endpoint for a different account run `aws iot describe-endpoint --endpoint-type iot:Data-ATS`
   host: "a2n7tk1kp18wix-ats.iot.us-east-1.amazonaws.com"
 });
 
