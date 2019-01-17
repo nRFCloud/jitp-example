@@ -44,7 +44,7 @@ cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
 The required device certs are now ready. It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic:
 
 ```
-node scripts/provision-and-publish.js
+node scripts/connect-and-publish.js
 ```
 
 You should see the following in your terminal:
@@ -58,7 +58,7 @@ message jitp_test {"success":"JITP works!"}
 
 You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
 
-Running `node scripts/provision-and-publish.js` again will not re-provision it, so the JITP process is essentially idempotent.
+Running `node scripts/connect-and-publish.js` again will not re-provision it, so the JITP process is essentially idempotent.
 
 ## Additional Resources
 
