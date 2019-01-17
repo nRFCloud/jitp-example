@@ -1,0 +1,14 @@
+{
+  "name": "jtip",
+  "version": "1.0.0",
+  "description": "https://docs.aws.amazon.com/iot/latest/developerguide/diagnosing-connectivity-issues.html `openssl s_client -connect a2n7tk1kp18wix.iot.us-east-1.amazonaws.com:8883 -CAfile root.cert -cert deviceCertAndCACert.crt -key deviceCert.key` `openssl s_client -connect a2n7tk1kp18wix.iot.us-east-1.amazonaws.com:8883 -CAfile rootCA.pem -cert deviceCert.crt -key deviceCert.key`",
+  "main": "create-template-json.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-iot-device-sdk": "^2.2.1"
+  }
+}
