@@ -2,7 +2,11 @@
 
 This repo contains a working example of JITP. Note that this is different than JITR, which is explained in [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/). The steps used to create the files in this repo were also based on the same article.
 
-The JITP process merely connects a device to AWS IoT. It does not associate a device with a tenant or user, nor does it assign a ThingType or ThingGroup, all of which can be done during the downstream device association process.
+The example that follows focuses on the steps that begin with generating an intermediate CA (i.e., a CA cert for Nordic Semiconductor instead of using AWS's root CA), as well as the certs for a device.
+
+If you want to try all this out on your own AWS account it's probably best that you work through the entire aforementioned so that you set up the required IAM role and other items.
+
+It's important to realize that the JITP process merely connects a device to AWS IoT. It does not associate a device with a tenant or user, nor does it assign a ThingType or ThingGroup, all of which can be done during the downstream device association process.
 
 ## To Try It Out
 
@@ -11,7 +15,7 @@ npm i
 node scripts/create-template-json.js
 ```
 
-This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html). I could have just included the final JSON file, but it's hard to read and modify in that form because it's stringified twice.
+This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. I could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice.
 
 Now run:
 
