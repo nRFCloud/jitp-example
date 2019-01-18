@@ -1,6 +1,6 @@
 # Just-in-Time Provisioning (JITP) of AWS IoT Things (Devices)
 
-This repo contains a working example of JITP. Note that this is different than JITR, which is explained in [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/). The steps used to create the files in this repo were also based on the same article.
+This repo contains a working example of JITP. Note that this is different than JITR, which is explained in [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/). The steps used to create the files in this repo were also based on the same article. This [set of slides](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf) also provides a good overview of JITR and JITP.
 
 The example that follows focuses on the steps that begin with generating an intermediate CA (i.e., a CA cert for Nordic Semiconductor instead of using AWS's root CA), as well as the certs for a device.
 
@@ -33,16 +33,15 @@ aws iot describe-ca-certificate --certificate-id 08e2b95c05656320767287f69ce12b4
 
 Now it's time to generate some certs for your new device in order to test that it gets provisioned "just in time" on AWS IoT. Generating certs for a device could be done during the manufacturing / production process, or by a third-party that buys the nRF91 chips and uses their own CA. The certs would then be flashed onto the device before shipping.
 
-Here's how it's done using openssl from your terminal:
+What follows is it's done using openssl from your terminal. We use the `-subj` argument to pass in values declared in the [provisioning template](https://github.com/nRFCloud/jitp-example/blob/master/provisioning-template.js). The parameters supported by AWS are [listed here](https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html). 
+
+In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. 
+
+Feel free to use different values, but these support the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
 
 ```
-openssl genrsa -out deviceCert.key 2048
-openssl req -new -key deviceCert.key -out deviceCert.csr
-```
-
-When prompted type (in this order): US, Oregon, Portland, Nordic Semiconductor, R&D and then a device id of your choosing (must be unique in our AWS IoT fleet), e.g., `nrf-jitp-123456789012347` (expect an error if you use that one). This value will be used as the `ThingName` during provisioning.
-
-```
+openssl req -new -key deviceCert.key -out deviceCert.csr \
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347/dnQualifier=iris-backend-prod-nrf91gpsflipdemos"
 openssl x509 -req -in deviceCert.csr -CA security/NordicRootCA.pem -CAkey security/NordicRootCA.key -CAcreateserial -out deviceCert.crt -days 365 -sha256
 cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
 ```
@@ -82,6 +81,8 @@ Note that running `node scripts/connect-and-publish.js` again will not re-provis
 
 ### External
 
+- [AWS Summit Slide Deck: Device Provisioning Options with AWS
+IoT](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf)
 - https://docs.aws.amazon.com/iot/latest/developerguide/iot-provision.html
 - https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication
 - https://github.com/aws/aws-iot-device-sdk-js#certificates
