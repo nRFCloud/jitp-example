@@ -1,6 +1,12 @@
 {
   "templateBody": {
     "Parameters": {
+      "AWS::IoT::Certificate::DistinguishedNameQualifier": {
+        "Type": "String"
+      },
+      "AWS::IoT::Certificate::OrganizationalUnit": {
+        "Type": "String"
+      },
       "AWS::IoT::Certificate::CommonName": {
         "Type": "String"
       },
@@ -15,10 +21,10 @@
           "ThingName": {
             "Ref": "AWS::IoT::Certificate::CommonName"
           },
-          "AttributePayload": {
-            "stage": "dev",
-            "blocked": "0"
-          }
+          "ThingTypeName": {
+            "Ref": "AWS::IoT::Certificate::OrganizationalUnit"
+          },
+          "ThingGroups": [{ "Ref": "AWS::IoT::Certificate::DistinguishedNameQualifier" }]
         }
       },
       "certificate": {
@@ -26,7 +32,7 @@
         "Properties": {
           "CertificateId": {
             "Ref": "AWS::IoT::Certificate::Id"
-          },
+          },        
           "Status": "ACTIVE"
         }
       },
