@@ -37,11 +37,12 @@ What follows is it's done using openssl from your terminal. We use the `-subj` a
 
 In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. 
 
-Feel free to use different values, but these support the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
+Feel free to use different values, but the example below supports the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
 
 ```
+openssl genrsa -out deviceCert.key 2048
 openssl req -new -key deviceCert.key -out deviceCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347/dnQualifier=iris-backend-prod-nrf91gpsflipdemos"
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
 openssl x509 -req -in deviceCert.csr -CA security/NordicRootCA.pem -CAkey security/NordicRootCA.key -CAcreateserial -out deviceCert.crt -days 365 -sha256
 cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
 ```
