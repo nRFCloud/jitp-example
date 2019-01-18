@@ -70,7 +70,7 @@ aws iot describe-endpoint --endpoint-type iot:Data-ATS
 
 You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
 
-You might also be interested to know that the contents of the deviceCert.crt file you generated is now stored on AWS IoT. You can verify this by running, substituting `your-device-certificate-id` with your device's cert id which you can get from your Thing's page on AWS IoT (click its Security menu item, then click the certificate):
+You might also be interested to know that the contents of the deviceCert.crt file you generated is now stored on AWS IoT. You can verify this by running the following, substituting `your-device-certificate-id` with your device's cert id, which you can get from your Thing's page on AWS IoT (click its Security menu item, then click the certificate):
 
 ```
 aws iot describe-certificate --certificate-id <your-device-certificate-id>
