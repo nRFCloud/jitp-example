@@ -15,7 +15,7 @@ npm i
 node scripts/create-template-json.js
 ```
 
-This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. I could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice.
+This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice.
 
 Now run:
 
@@ -95,3 +95,7 @@ Note that running `node scripts/connect-and-publish.js` again will not re-provis
 - https://projecttools.nordicsemi.no/confluence/display/IRIS/JITR+research (Note: this is JITR research, not JITP)
 - https://projecttools.nordicsemi.no/confluence/display/IRIS/Certificate+Provisioning+Server+Requirements
 - https://projecttools.nordicsemi.no/confluence/display/IRIS/Credential+Server?src=contextnavpagetreemode
+
+## TODO
+
+- Use CDK to generate the JITP role and the AWS IoT Policy referenced by the provisioning template. See [this](https://github.com/aws-samples/aws-iot-jitp-sample-scripts/blob/master/etc/cloudformation.yaml) as an example. Will allow us to restrict policy actions per device because the [inline policy](https://github.com/nRFCloud/jitp-example/blob/6ac37256d16dc72ba48f86b7c9e14abd1eb1e29e/provisioning-template.js#L39) doesn't allow us to use referenced parameters as variables, e.g., to set a resource to `$aws/things/nrf-jitp-123456789012347/shadow/update` where `nrf-jitp-123456789012347` is the value of the `AWS::IoT::Certificate::CommonName` param.
