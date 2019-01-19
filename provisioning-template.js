@@ -44,7 +44,7 @@
             "Statement": [
               {
                 "Effect": "Allow",
-                "Action": ["iot:Connect", "iot:Publish", "iot:Subscribe", "iot:Receive"],
+                "Action": ["iot:Connect", "iot:Publish", "iot:Subscribe", "iot:Receive", "iot:UpdateThingShadow"],
                 "Resource": ["*"]
               }
             ]

@@ -47,18 +47,19 @@ openssl x509 -req -in deviceCert.csr -CA security/NordicRootCA.pem -CAkey securi
 cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
 ```
 
-The required device certs are now ready. It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic:
+The required device certs are now ready. It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic. For this step use the same device id as you used as the `CN` value when generating the device certs:
 
 ```
-node scripts/connect-and-publish.js
+DeviceId=<your-device-id> node scripts/connect-and-publish.js
 ```
 
-You should see the following in your terminal:
+You should see something like the following in your terminal:
 
 ```
 close event fired
 reconnect event fired
 connect
+message $aws/things/nrf-jitp-123456789012347/shadow/update/accepted {"state":{"desired":{"stage":"dev","pairing":{"state":"initiate"}}},"metadata":{"desired":{"stage":{"timestamp":1547857567},"pairing":{"state":{"timestamp":1547857567}}}},"version":7,"timestamp":1547857567}
 message jitp_test {"success":"JITP works!"}
 ```
 

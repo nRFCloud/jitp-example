@@ -1,11 +1,13 @@
 const iot = require("aws-iot-device-sdk");
+const deviceId = process.env.DeviceId;
+if (!deviceId) { console.log("Please set a DeviceId env variable to the device id you used when creating the device certs."); return; }
 
 let device = iot.device({
   keyPath: "deviceCert.key",
   certPath: "deviceCertAndCACert.crt",
   caPath: "security/AmazonRootCA1.pem",
   // This does not have to be the Thing Id or Thing Name.
-  clientId: "someUniqueId",
+  clientId: deviceId,
   // NOTE: using Nordic's ATS endpoint. See https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication.
   // To find the ATS endpoint for a different account run `aws iot describe-endpoint --endpoint-type iot:Data-ATS`
   host: "a2n7tk1kp18wix-ats.iot.us-east-1.amazonaws.com"
@@ -13,12 +15,33 @@ let device = iot.device({
 
 device.on("connect", function() {
   console.log("connect");
+  const testTopic = `${deviceId}/jitp_test`;
+  const shadowUpdateTopic = `$aws/things/${deviceId}/shadow/update`;
 
-  device.subscribe("jitp_test", function(err) {
+  device.subscribe(testTopic, function(err) {
     if (!err) {
-      device.publish("jitp_test", JSON.stringify({ success: "JITP works!" }));
-    }
+      device.publish(testTopic, JSON.stringify({ success: "JITP works!" }));
+    };
   });
+
+  // This demonstrates how to update the shadow during JITP in order to prep
+  // a device for pairing with an nRFCloud.com account.
+  device.subscribe(`${shadowUpdateTopic}/rejected`);
+  device.subscribe(`${shadowUpdateTopic}/accepted`, function(err) {
+    if (!err) {
+      device.publish(shadowUpdateTopic, JSON.stringify({
+        state: {
+          'desired': {
+              stage: 'dev',
+              'pairing': {
+                  'state': 'initiate'
+              }
+            }
+          }
+        })
+      )
+    };
+  });  
 });
 
 device.on("message", function(topic, payload) {
