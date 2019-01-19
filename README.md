@@ -1,6 +1,6 @@
 # Just-in-Time Provisioning (JITP) of AWS IoT Things (Devices)
 
-This repo contains a working example of JITP. Note that this is different than JITR, which is explained in [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/). The steps used to create the files in this repo were also based on the same article. This [set of slides](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf) also provides a good overview of JITR and JITP.
+This repo contains a working example of JITP. Note that this is different than JITR, which is explained in [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/). The steps used to create the files in this repo were also based on the same article. [This slide deck](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf) also provides a good overview of JITR and JITP.
 
 The example that follows focuses on the steps that begin with generating an intermediate CA (i.e., a CA cert for Nordic Semiconductor instead of using AWS's root CA), as well as the certs for a device.
 
@@ -82,13 +82,12 @@ Note that running `node scripts/connect-and-publish.js` again will not re-provis
 
 ### External
 
-- [AWS Summit Slide Deck: Device Provisioning Options with AWS
-IoT](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf)
-- https://docs.aws.amazon.com/iot/latest/developerguide/iot-provision.html
-- https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication
-- https://github.com/aws/aws-iot-device-sdk-js#certificates
-- https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-sdk-node.html
-- https://github.com/aws-samples/aws-iot-jitp-sample-scripts
+- [AWS Summit Slide Deck: Device Provisioning Options with AWS IoT](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf)
+- [AWS Docs: Device Provisioning](https://docs.aws.amazon.com/iot/latest/developerguide/iot-provision.html)
+- [AWS Docs: X.509 Certificates and AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication)
+- [AWS Iot SDK: Cert Provisioning](https://github.com/aws/aws-iot-device-sdk-js#certificates)
+- [Using the AWS IoT Device SDK for JavaScript](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-sdk-node.html)
+- [AWS IoT Just In Time Provisioning Sample Scripts](https://github.com/aws-samples/aws-iot-jitp-sample-scripts)
 
 ### Internal
 
