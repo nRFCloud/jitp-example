@@ -20,7 +20,7 @@ device.on("connect", function() {
 
   device.subscribe(testTopic, function(err) {
     if (!err) {
-      device.publish(testTopic, JSON.stringify({ success: "JITP works!" }));
+      device.publish(testTopic, JSON.stringify({ success: "Hello from my computer-cum-IoT device!" }));
     };
   });
 
