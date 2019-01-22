@@ -1,0 +1,54 @@
+# Adapted from https://raw.githubusercontent.com/aws-samples/aws-iot-jitp-sample-scripts/master/etc/cloudformation.yaml
+AWSTemplateFormatVersion: 2010-09-09
+Description: Setup AWS IoT Policies and IAM Roles for Just-In-Time Provisioning (JITP)
+
+Resources:
+  IoTProvisioningRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: IoTJITProvisioning
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service: "iot.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration
+        - arn:aws:iam::aws:policy/service-role/AWSIoTLogging
+        - arn:aws:iam::aws:policy/service-role/AWSIoTRuleActions
+
+  IoTAccess:
+    Type: "AWS::IoT::Policy"
+    Properties:
+      PolicyName: IoTAccess
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - 
+            Sid: MQTTConnect
+            Action:
+              - "iot:Connect"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":client/${iot:Certificate.Subject.CommonName}"]] }
+          -
+            Sid: MQTTRead
+            Action:
+              - "iot:Subscribe"
+              - "iot:Receive"
+            Effect: Allow
+            Resource: "*"
+          - 
+            Sid: MQTTWrite
+            Action:
+              - "iot:Publish"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":topic/${iot:Certificate.Subject.CommonName}"]] }
+          -
+            Sid: ShadowUpdate
+            Action:
+              - "iot:UpdateThingShadow"
+            Effect: Allow
+            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":$aws/things/${iot:Certificate.Subject.CommonName}/shadow/update"]] }
