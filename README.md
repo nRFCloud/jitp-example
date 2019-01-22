@@ -88,17 +88,9 @@ Note that running `node scripts/connect-and-publish.js` again will not re-provis
 
 ## Additional Resources
 
-### External
-
 - [AWS Summit Slide Deck: Device Provisioning Options with AWS IoT](http://aws-de-media.s3.amazonaws.com/images/AWS_Summit_2018/June6/Lowflyinghawk/Device%20Provisioning%20Options%20with%20AWS%20IoT.pdf)
 - [AWS Docs: Device Provisioning](https://docs.aws.amazon.com/iot/latest/developerguide/iot-provision.html)
 - [AWS Docs: X.509 Certificates and AWS IoT](https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication)
 - [AWS Iot SDK: Cert Provisioning](https://github.com/aws/aws-iot-device-sdk-js#certificates)
 - [Using the AWS IoT Device SDK for JavaScript](https://docs.aws.amazon.com/iot/latest/developerguide/iot-device-sdk-node.html)
 - [AWS IoT Just In Time Provisioning Sample Scripts](https://github.com/aws-samples/aws-iot-jitp-sample-scripts)
-
-### Internal
-
-- https://projecttools.nordicsemi.no/confluence/display/IRIS/JITR+research (Note: this is JITR research, not JITP)
-- https://projecttools.nordicsemi.no/confluence/display/IRIS/Certificate+Provisioning+Server+Requirements
-- https://projecttools.nordicsemi.no/confluence/display/IRIS/Credential+Server?src=contextnavpagetreemode
