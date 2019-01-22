@@ -10,12 +10,18 @@ It's important to realize that the JITP process merely connects a device to AWS 
 
 ## To Try It Out
 
+Install the dependencies and create the AWS resources needed to support JITP:
+
 ```
 npm i
-node scripts/create-template-json.js
+aws cloudformation create-stack --stack-name jitp --template-body file://./cloudformation.yml --capabilities CAPABILITY_NAMED_IAM
 ```
 
 This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice.
+
+```
+node scripts/create-template-json.js
+```
 
 Now run:
 

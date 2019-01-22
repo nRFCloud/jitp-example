@@ -39,19 +39,10 @@
       "policy": {
         "Type": "AWS::IoT::Policy",
         "Properties": {
-          "PolicyDocument": {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Action": ["iot:Connect", "iot:Publish", "iot:Subscribe", "iot:Receive", "iot:UpdateThingShadow"],
-                "Resource": ["*"]
-              }
-            ]
-          }
+          "PolicyName": "IoTAccess"
         }
       }
     }
   },
-  "roleArn": "arn:aws:iam::680502709288:role/JITPRole"
+  "roleArn": "arn:aws:iam::680502709288:role/IoTJITProvisioning"
 }
