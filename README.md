@@ -27,7 +27,7 @@ Now run:
 aws iot register-ca-certificate --ca-certificate file://security/nordicRootCA.pem --verification-cert file://security/verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
 ```
 
-There's a good chance you will get a `ResourceAlreadyExistsException` because the CA already exists in Nordic's main account. That's fine. At least the above AWS CLI command shows you how it's done.(the nordicRoot files in the `security` folder were generated with `openssl`. See [the aforementioned article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
+There's a good chance you will get a `ResourceAlreadyExistsException` because the CA already exists in Nordic's main account. That's fine. At least the above AWS CLI command shows you how it's done. (The `NordicRootCA` files in the [security](https://github.com/nRFCloud/jitp-example/tree/master/security) folder were generated with `openssl`. See [the aforementioned article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
 )
 
 If you want to see details about the CA cert, including its associated JITP template, run the following (substitute your CA cert id if different):
