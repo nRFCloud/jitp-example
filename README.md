@@ -17,7 +17,7 @@ npm i
 aws cloudformation create-stack --stack-name jitp --template-body file://./cloudformation.yml --capabilities CAPABILITY_NAMED_IAM
 ```
 
-This script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice.
+This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. Run:
 
 ```
 node scripts/create-template-json.js
@@ -29,7 +29,8 @@ Now run:
 aws iot register-ca-certificate --ca-certificate file://security/nordicRootCA.pem --verification-cert file://security/verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
 ```
 
-There's a good chance you will get a `ResourceAlreadyExistsException` because the CA already exists. That's fine. At least the above AWS CLI command shows you how it's done.
+There's a good chance you will get a `ResourceAlreadyExistsException` because the CA already exists in Nordic's main account. That's fine. At least the above AWS CLI command shows you how it's done.(the nordicRoot files in the `security` folder were generated with `openssl`. See [the aforementioned article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
+)
 
 If you want to see details about the CA cert, including its associated JITP template, run the following (substitute your CA cert id if different):
 
