@@ -65,7 +65,7 @@ close event fired
 reconnect event fired
 connect
 message $aws/things/nrf-jitp-123456789012347/shadow/update/accepted {"state":{"desired":{"stage":"dev","pairing":{"state":"initiate"}}},"metadata":{"desired":{"stage":{"timestamp":1547857567},"pairing":{"state":{"timestamp":1547857567}}}},"version":7,"timestamp":1547857567}
-message jitp_test {"success":"Hello from my computer-cum-IoT-device!"}
+message nrf-jitp-123456789012347 {"success":"Hello from my computer-cum-IoT-device!"}
 ```
 
 _Note_: this script uses the [ATS endpoint](https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication) for Nordic Semiconductor's main AWS account. If you want to try this script on a different account, replace the `host` in the script with `endpointAddress` returned by this CLI command:

@@ -15,12 +15,11 @@ let device = iot.device({
 
 device.on("connect", function() {
   console.log("connect");
-  const testTopic = `${deviceId}/jitp_test`;
   const shadowUpdateTopic = `$aws/things/${deviceId}/shadow/update`;
 
-  device.subscribe(testTopic, function(err) {
+  device.subscribe(deviceId, function(err) {
     if (!err) {
-      device.publish(testTopic, JSON.stringify({ success: "Hello from my computer-cum-IoT-device!" }));
+      device.publish(deviceId, JSON.stringify({ success: "Hello from my computer-cum-IoT-device!" }));
     };
   });
 
