@@ -4,7 +4,7 @@ This repo contains a working example of JITP. Note that this is different than J
 
 The example that follows focuses on the steps that begin with generating an intermediate CA (i.e., a CA cert for Nordic Semiconductor instead of using AWS's root CA), as well as the certs for a device.
 
-It's important to realize that the JITP process merely connects a device to AWS IoT. It does not associate a device with a tenant or user, nor does it assign a ThingType or ThingGroup, all of which can be done during the downstream device association process.
+It's important to realize that the JITP process merely connects a device to AWS IoT. It does not do DUA (device user association).
 
 ## To Try It Out
 
