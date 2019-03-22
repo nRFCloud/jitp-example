@@ -27,7 +27,7 @@ JITP_ROLE_ARN=YOUR_STACK_OUTPUT_VALUE node scripts/create-template-json.js
 
 The steps that follow in this section are reproduced with some modification from [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
 
-For your AWS account get a registration code from AWS IoT Core and set it to the `REGISTRATION_CODE` environment variable. This code will be used as the Common Name of the private key verification certificate. Set
+For your AWS account get a registration code from AWS IoT Core and set it to the `REGISTRATION_CODE` environment variable. This code will be used as the Common Name of the private key verification certificate:
 
 ```
 aws iot get-registration-code
@@ -50,7 +50,7 @@ openssl x509 -req -in $PATH_TO_PROJECT/verificationCert.csr -CA $PATH_TO_PROJECT
     -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/verificationCert.pem -days 500 -sha256
 ```
 
-You should now have 6 total files: a .key, .pem and .srl named after `CA_FILE_NAME`, as well as verificationCert.csr, verificationCert.key and verificationCert.pem.
+You should now have 6 new files: a .key, .pem and .srl named after `CA_FILE_NAME`, as well as verificationCert.csr, verificationCert.key and verificationCert.pem.
 
 Run the following to register the CA cert with AWS IoT:
 
@@ -61,31 +61,37 @@ aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --veri
 If you want to see details about the CA cert, including its associated JITP template, run the following (substitute your CA cert id if different):
 
 ```
-aws iot describe-ca-certificate --certificate-id 08e2b95c05656320767287f69ce12b48b7b5043f85d1c5fa6b8736e4190a7c5e
+aws iot describe-ca-certificate --certificate-id YOUR_CERTIFICATE_ID_FROM_REGISTRATION
 ```
 
 ## Generate a Certificate for Your Device
 
 Now it's time to generate some certs for your computer (soon to be acting as an IoT device) in order to test that it gets provisioned "just in time" on AWS IoT. Generating certs for a device could be done during the manufacturing / production process, or by a third-party that buys the nRF91 chips and uses their own CA. The certs would then be flashed onto the device before shipping.
 
-What follows is how it's done using openssl from your terminal. We use the `-subj` argument to pass in values declared in the [provisioning template](https://github.com/nRFCloud/jitp-example/blob/master/provisioning-template.js). The parameters supported by AWS are [listed here](https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html). 
+We use the `-subj` argument to pass in values declared in the [provisioning template](https://github.com/nRFCloud/jitp-example/blob/master/provisioning-template.js). The parameters supported by AWS are [listed here](https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html). 
 
 In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. 
 
 Feel free to use different values, but the example below supports the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
 
 ```
-openssl genrsa -out deviceCert.key 2048
-openssl req -new -key deviceCert.key -out deviceCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347-123456/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
-openssl x509 -req -in deviceCert.csr -CA security/NordicRootCA.pem -CAkey security/NordicRootCA.key -CAcreateserial -out deviceCert.crt -days 365 -sha256
-cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
+DEVICE_ID=nrf-jitp-123456789012347-123456
+
+openssl genrsa -out $PATH_TO_PROJECT/deviceCert.key 2048
+openssl req -new -key $PATH_TO_PROJECT/deviceCert.key -out $PATH_TO_PROJECT/deviceCert.csr \
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=$DEVICE_ID/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
+openssl x509 -req -in $PATH_TO_PROJECT/deviceCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
+    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/deviceCert.crt -days 365 -sha256
+cat deviceCert.crt $CA_FILE_NAME.pem > deviceCertAndCACert.crt
 ```
 
-The required device certs are now ready. It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic. For this step use the same device id as you used as the `CN` value when generating the device certs:
+You should now have four new files: deviceCert.crt, deviceCert.csr, deviceCert.key and deviceCertAndCACert.crt.
+
+It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic:
 
 ```
-DeviceId=<your-device-id> node scripts/connect-and-publish.js
+MQTT_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:Data-ATS | grep endpointAddress | awk '{ print  $2; }' | tr -d '"');
+MQTT_ENDPOINT=$MQTT_ENDPOINT DEVICE_ID=$DEVICE_ID node scripts/connect-and-publish.js
 ```
 
 You should see something like the following in your terminal:
