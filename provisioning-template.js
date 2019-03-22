@@ -44,5 +44,5 @@
       }
     }
   },
-  "roleArn": "arn:aws:iam::680502709288:role/IoTJITProvisioning"
+  "roleArn": "YOUR_ROLE_ARN"
 }
