@@ -87,6 +87,8 @@ cat deviceCert.crt $CA_FILE_NAME.pem > deviceCertAndCACert.crt
 
 You should now have four new files: deviceCert.crt, deviceCert.csr, deviceCert.key and deviceCertAndCACert.crt.
 
+## Connect Your Device to AWS IoT
+
 It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic:
 
 ```
