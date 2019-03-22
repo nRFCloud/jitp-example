@@ -1,6 +1,7 @@
 node_modules/
 provisioning-template.json
-deviceCert.crt
-deviceCert.csr
-deviceCert.key
 deviceCertAndCACert.crt
+deviceCert.*
+verificationCert.*
+NordicCA.*
+.env
