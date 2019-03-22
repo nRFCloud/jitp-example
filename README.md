@@ -17,26 +17,54 @@ aws cloudformation create-stack --stack-name jitp --template-body file://./cloud
 
 This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `IoTAccess` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
 
-Run:
+Set the `JITP_ROLE_ARN` environment variable to the IotProvisioningRole value in your jitp stack's Outputs tab.
 
 ```
-node scripts/create-template-json.js
+JITP_ROLE_ARN=YOUR_STACK_OUTPUT_VALUE node scripts/create-template-json.js
 ```
 
-Now run:
+## Generate an Intermediate CA Cert and Register it with AWS IoT
+
+The steps that follow in this section are reproduced with some modification from [this article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
+
+For your AWS account get a registration code from AWS IoT Core and set it to the `REGISTRATION_CODE` environment variable. This code will be used as the Common Name of the private key verification certificate. Set
 
 ```
-aws iot register-ca-certificate --ca-certificate file://security/nordicRootCA.pem --verification-cert file://security/verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
+aws iot get-registration-code
+REGISTRATION_CODE=YOUR_GENERATED_CODE
 ```
 
-There's a good chance you will get a `ResourceAlreadyExistsException` because the CA already exists in Nordic's main account. That's fine. At least the above AWS CLI command shows you how it's done. (The `NordicRootCA` files in the [security](https://github.com/nRFCloud/jitp-example/tree/master/security) folder were generated with `openssl`. See [the aforementioned article](https://aws.amazon.com/blogs/iot/setting-up-just-in-time-provisioning-with-aws-iot-core/).
-)
+When running `openssl` you'll want to provide the full path to this project on your local computer:
+
+```
+PATH_TO_PROJECT=my/path/to/this/project
+CA_FILE_NAME=NordicCA
+
+openssl genrsa -out $PATH_TO_PROJECT/$CA_FILE_NAME.key 2048
+openssl req -x509 -new -nodes -key $CA_FILE_NAME.key -sha256 -days 1024 -out $CA_FILE_NAME.pem \
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=R&D"
+openssl genrsa -out $PATH_TO_PROJECT/verificationCert.key 2048
+openssl req -new -key $PATH_TO_PROJECT/verificationCert.key -out $PATH_TO_PROJECT/verificationCert.csr \
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=R&D/CN=$REGISTRATION_CODE"
+openssl x509 -req -in $PATH_TO_PROJECT/verificationCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
+    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/verificationCert.pem -days 500 -sha256
+```
+
+You should now have 6 total files: a .key, .pem and .srl named after `CA_FILE_NAME`, as well as verificationCert.csr, verificationCert.key and verificationCert.pem.
+
+Run the following to register the CA cert with AWS IoT:
+
+```
+aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
+```
 
 If you want to see details about the CA cert, including its associated JITP template, run the following (substitute your CA cert id if different):
 
 ```
 aws iot describe-ca-certificate --certificate-id 08e2b95c05656320767287f69ce12b48b7b5043f85d1c5fa6b8736e4190a7c5e
 ```
+
+## Generate a Certificate for Your Device
 
 Now it's time to generate some certs for your computer (soon to be acting as an IoT device) in order to test that it gets provisioned "just in time" on AWS IoT. Generating certs for a device could be done during the manufacturing / production process, or by a third-party that buys the nRF91 chips and uses their own CA. The certs would then be flashed onto the device before shipping.
 
@@ -49,7 +77,7 @@ Feel free to use different values, but the example below supports the [nrfcloud-
 ```
 openssl genrsa -out deviceCert.key 2048
 openssl req -new -key deviceCert.key -out deviceCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=nrf-jitp-123456789012347-123456/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
 openssl x509 -req -in deviceCert.csr -CA security/NordicRootCA.pem -CAkey security/NordicRootCA.key -CAcreateserial -out deviceCert.crt -days 365 -sha256
 cat deviceCert.crt security/nordicRootCA.pem > deviceCertAndCACert.crt
 ```
