@@ -1,17 +1,18 @@
 const iot = require("aws-iot-device-sdk");
-const deviceId = process.env.DeviceId;
+const deviceId = process.env.DEVICE_ID;
 if (!deviceId) { console.log("Please set a DeviceId env variable to the device id you used when creating the device certs."); return; }
 
-let device = iot.device({
+const config = {
   keyPath: "deviceCert.key",
   certPath: "deviceCertAndCACert.crt",
-  caPath: "security/AmazonRootCA1.pem",
+  caPath: "AmazonRootCA1.pem",
   // This does not have to be the Thing Id or Thing Name.
   clientId: deviceId,
-  // NOTE: using Nordic's ATS endpoint. See https://docs.aws.amazon.com/iot/latest/developerguide/managing-device-certs.html#server-authentication.
-  // To find the ATS endpoint for a different account run `aws iot describe-endpoint --endpoint-type iot:Data-ATS`
-  host: "a2n7tk1kp18wix-ats.iot.us-east-1.amazonaws.com"
-});
+  // To find the ATS endpoint for your account run `aws iot describe-endpoint --endpoint-type iot:Data-ATS`
+  host: process.env.MQTT_ENDPOINT
+};
+console.log(config);
+let device = iot.device(config);
 
 device.on("connect", function() {
   console.log("connect");
