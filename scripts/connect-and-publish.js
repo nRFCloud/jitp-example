@@ -1,5 +1,6 @@
 const iot = require("aws-iot-device-sdk");
 const deviceId = process.env.DEVICE_ID;
+const stage = process.env.STAGE || 'dev';
 if (!deviceId) { console.log("Please set a DeviceId env variable to the device id you used when creating the device certs."); return; }
 
 const config = {
@@ -29,17 +30,18 @@ device.on("connect", function() {
   device.subscribe(`${shadowUpdateTopic}/rejected`);
   device.subscribe(`${shadowUpdateTopic}/accepted`, function(err) {
     if (!err) {
-      device.publish(shadowUpdateTopic, JSON.stringify({
+      const payload = SON.stringify({
         state: {
           'desired': {
-              stage: 'dev',
+              stage,
               'pairing': {
                   'state': 'initiate'
               }
             }
           }
         })
-      )
+      console.log('shadowUpdateTopic payload', payload)
+      device.publish(shadowUpdateTopic, payload)
     };
   });  
 });
