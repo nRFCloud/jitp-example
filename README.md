@@ -12,7 +12,10 @@ Install the dependencies and create the AWS resources needed to support JITP:
 
 ```
 npm i
-aws cloudformation create-stack --stack-name jitp --template-body file://./cloudformation.yml --capabilities CAPABILITY_NAMED_IAM
+STAGE=dev
+aws cloudformation create-stack --stack-name jitp --template-body file://./cloudformation.yml \
+    --parameters ParameterKey=Stage,ParameterValue=$STAGE \
+    --capabilities CAPABILITY_NAMED_IAM
 ```
 
 This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `IoTAccess` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
@@ -20,7 +23,7 @@ This next script generates the JSON for a [provisioning template](https://docs.a
 Set the `JITP_ROLE_ARN` environment variable to the IotProvisioningRole value in your jitp stack's Outputs tab.
 
 ```
-JITP_ROLE_ARN=YOUR_STACK_OUTPUT_VALUE node scripts/create-template-json.js
+JITP_ROLE_ARN=YOUR_STACK_OUTPUT_VALUE STAGE=$STAGE node scripts/create-template-json.js
 ```
 
 ## Generate an Intermediate CA Cert and Register it with AWS IoT
@@ -58,7 +61,7 @@ Run the following to register the CA cert with AWS IoT:
 aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
 ```
 
-If you want to see details about the CA cert, including its associated JITP template, run the following (substitute your CA cert id if different):
+If you want to see details about the CA cert, including its associated JITP template, run the following:
 
 ```
 aws iot describe-ca-certificate --certificate-id YOUR_CERTIFICATE_ID_FROM_REGISTRATION
@@ -70,7 +73,7 @@ Now it's time to generate some certs for your computer (soon to be acting as an 
 
 We use the `-subj` argument to pass in values declared in the [provisioning template](https://github.com/nRFCloud/jitp-example/blob/master/provisioning-template.js). The parameters supported by AWS are [listed here](https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html). 
 
-In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. 
+In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. `WARNING`: you can only use a `ThingType` or `ThingGroup` name that is registered with AWS IoT. Otherwise, JITP will fail, and rather silently.
 
 Feel free to use different values, but the example below supports the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
 
@@ -79,7 +82,7 @@ DEVICE_ID=nrf-jitp-123456789012347-123456
 
 openssl genrsa -out $PATH_TO_PROJECT/deviceCert.key 2048
 openssl req -new -key $PATH_TO_PROJECT/deviceCert.key -out $PATH_TO_PROJECT/deviceCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=iris-backend-dev-nrf91gpsflipdemo/CN=$DEVICE_ID/dnQualifier=iris-backend-dev-nrf91gpsflipdemos"
+    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=nordic-jitp-demo/CN=$DEVICE_ID/dnQualifier=nordic-jitp"
 openssl x509 -req -in $PATH_TO_PROJECT/deviceCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
     -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/deviceCert.crt -days 365 -sha256
 cat deviceCert.crt $CA_FILE_NAME.pem > deviceCertAndCACert.crt
