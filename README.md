@@ -13,7 +13,7 @@ Install the dependencies and create the AWS resources needed to support JITP:
 ```
 npm i
 STAGE=dev
-aws cloudformation create-stack --stack-name jitp --template-body file://./cloudformation.yml \
+aws cloudformation create-stack --stack-name nordic-jitp --template-body file://./cloudformation.yml \
     --parameters ParameterKey=Stage,ParameterValue=$STAGE \
     --capabilities CAPABILITY_NAMED_IAM
 ```
