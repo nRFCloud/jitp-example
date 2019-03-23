@@ -75,8 +75,6 @@ We use the `-subj` argument to pass in values declared in the [provisioning temp
 
 In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. `WARNING`: you can only use a `ThingType` or `ThingGroup` name that is registered with AWS IoT. Otherwise, JITP will fail, and rather silently.
 
-Feel free to use different values, but the example below supports the [nrfcloud-device-simulator](https://github.com/nRFCloud/nrfcloud-device-simulator):
-
 ```
 DEVICE_ID=nrf-jitp-123456789012347-123456
 
