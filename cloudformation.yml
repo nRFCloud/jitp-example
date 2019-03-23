@@ -19,10 +19,10 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration
         - arn:aws:iam::aws:policy/service-role/AWSIoTLogging
         - arn:aws:iam::aws:policy/service-role/AWSIoTRuleActions
-  IoTAccess:
+  JITPIoTAccess:
     Type: "AWS::IoT::Policy"
     Properties:
-      PolicyName: IoTAccess
+      PolicyName: JITPIoTAccess
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -31,7 +31,7 @@ Resources:
             Action:
               - "iot:Connect"
             Effect: Allow
-            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":client/${iot:Certificate.Subject.CommonName}"]] }
+            Resource: "*"
           -
             Sid: MQTTRead
             Action:
