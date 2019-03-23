@@ -1,6 +1,7 @@
 const iot = require("aws-iot-device-sdk");
-const deviceId = process.env.DEVICE_ID;
+const uuid = require('uuid');
 const stage = process.env.STAGE || 'dev';
+const deviceId = process.env.DEVICE_ID;
 if (!deviceId) { console.log("Please set a DeviceId env variable to the device id you used when creating the device certs."); return; }
 
 const config = {
@@ -8,7 +9,7 @@ const config = {
   certPath: "deviceCertAndCACert.crt",
   caPath: "AmazonRootCA1.pem",
   // This does not have to be the Thing Id or Thing Name.
-  clientId: deviceId,
+  clientId: uuid(),
   // To find the ATS endpoint for your account run `aws iot describe-endpoint --endpoint-type iot:Data-ATS`
   host: process.env.MQTT_ENDPOINT
 };
@@ -30,7 +31,7 @@ device.on("connect", function() {
   device.subscribe(`${shadowUpdateTopic}/rejected`);
   device.subscribe(`${shadowUpdateTopic}/accepted`, function(err) {
     if (!err) {
-      const payload = SON.stringify({
+      const payload = JSON.stringify({
         state: {
           'desired': {
               stage,
