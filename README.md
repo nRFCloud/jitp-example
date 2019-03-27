@@ -33,8 +33,7 @@ The steps that follow in this section are reproduced with some modification from
 For your AWS account get a registration code from AWS IoT Core and set it to the `REGISTRATION_CODE` environment variable. This code will be used as the Common Name of the private key verification certificate:
 
 ```
-aws iot get-registration-code
-REGISTRATION_CODE=YOUR_GENERATED_CODE
+REGISTRATION_CODE=$(aws iot get-registration-code | grep registrationCode | awk '{ print  $2; }' | tr -d '"');
 ```
 
 When running `openssl` you'll want to provide the full path to this project on your local computer:
