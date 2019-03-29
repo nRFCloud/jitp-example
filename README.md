@@ -89,22 +89,58 @@ You should now have four new files: deviceCert.crt, deviceCert.csr, deviceCert.k
 
 ## Connect Your Device to AWS IoT
 
-It's time to try connecting your device to AWS IoT, which should provision it and then publish to an MQTT topic:
+It's time to try connecting your device to AWS IoT, which should provision it, associate it with your tenant (which adds another IoT policy with increased pemissions), and then pub/sub to the AWS shadow topic and a custom message topic:
 
 ```
 MQTT_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:Data-ATS | grep endpointAddress | awk '{ print  $2; }' | tr -d '"');
-MQTT_ENDPOINT=$MQTT_ENDPOINT DEVICE_ID=$DEVICE_ID node scripts/connect-and-publish.js
+MQTT_ENDPOINT=$MQTT_ENDPOINT npm run connect
 ```
 
 You should see something like the following in your terminal:
 
 ```
+iotSDK.device config for device nrf-jitp-123456789012347-123456:
+ { keyPath: 'deviceCert.key',
+  certPath: 'deviceCertAndCACert.crt',
+  caPath: 'AmazonRootCA1.pem',
+  clientId: 'ec16d69d-5fb3-4519-b0ad-ff1d2dee523a',
+  host: 'a3riv5t9cwm5l1-ats.iot.us-east-1.amazonaws.com' }
 close event fired
 reconnect event fired
-connect
-message $aws/things/nrf-jitp-123456789012347-123456/shadow/update/accepted {"state":{"desired":{"stage":"dev","pairing":{"state":"initiate"}}},"metadata":{"desired":{"stage":{"timestamp":1547857567},"pairing":{"state":{"timestamp":1547857567}}}},"version":7,"timestamp":1547857567}
-message nrf-jitp-123456789012347-123456 {"success":"Hello from my computer-cum-IoT-device!"}
+close event fired
+reconnect event fired
+connect event fired
+setting device's tenantId attribute to jitp-test-tenant
+creating the device's shadow with its initial state
+attaching new policy to device cert { policyName: 'dta-7d602774-fb6d-4de6-8a13-6de5ebe0dbf1',
+  policyDocument:
+   '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["iot:UpdateThingShadow"],"Resource":["arn:aws:iot:*:*:$aws/things/nrf-jitp-123456789012347-123456/shadow/update"]},{"Effect":"Allow","Action":["iot:Subscribe"],"Resource":["arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted","arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/accepted","arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/delta","arn:aws:iot:*:*:topicfilter/dev/jitp-test-tenant/m/*"]},{"Effect":"Allow","Action":["iot:Publish"],"Resource":["arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/get","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update","arn:aws:iot:*:*:topic/dev/jitp-test-tenant/m/*"]},{"Effect":"Allow","Action":["iot:Receive"],"Resource":["arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/accepted","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/delta","arn:aws:iot:*:*:topic/dev/jitp-test-tenant/m/*"]}]}' }
+close event fired
+reconnect event fired
+connect event fired
+subscribed to $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted
+publishing empty message to retrieve shadow
+subscribed to $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted
+publishing empty message to retrieve shadow
+subscribed to dev/jitp-test-tenant/m/test/topic
+publishing hello message
+subscribed to dev/jitp-test-tenant/m/test/topic
+publishing hello message
+message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
+{ state: { reported: { pairing: { state: 'paired' } } },
+  metadata:
+   { reported: { pairing: { state: { timestamp: 1553895318 } } } },
+  version: 39,
+  timestamp: 1553895324 }
+message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
+{ state: { reported: { pairing: { state: 'paired' } } },
+  metadata:
+   { reported: { pairing: { state: { timestamp: 1553895318 } } } },
+  version: 39,
+  timestamp: 1553895324 }
+close event fired
 ```
+*Note*: It is currently unclear why the `subscribe` events fire twice, which leads to receiving duplicate messages.
 
 You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
 
@@ -114,7 +150,9 @@ You might also be interested to know that the contents of the deviceCert.crt fil
 aws iot describe-certificate --certificate-id <your-device-certificate-id>
 ```
 
-Note that running `node scripts/connect-and-publish.js` again will not re-provision it, so the JITP process is essentially idempotent.
+Note that running `npm run connect` again will not re-provision it, so the JITP process is essentially idempotent.
+
+If you want to delete your device and its associated certificate and policies run `npm run delete-device`.
 
 ## Additional Resources
 
