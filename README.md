@@ -18,7 +18,7 @@ aws cloudformation create-stack --stack-name nordic-jitp --template-body file://
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
-This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `IoTAccess` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
+This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `JITPIoTConnectPolicy` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
 
 Set the `JITP_ROLE_ARN` environment variable to the IotProvisioningRole value in your jitp stack's Outputs tab.
 
@@ -103,7 +103,7 @@ iotSDK.device config for device nrf-jitp-123456789012347-123456:
  { keyPath: 'deviceCert.key',
   certPath: 'deviceCertAndCACert.crt',
   caPath: 'AmazonRootCA1.pem',
-  clientId: 'ec16d69d-5fb3-4519-b0ad-ff1d2dee523a',
+  clientId: 'nrf-jitp-123456789012347-123456',
   host: 'a3riv5t9cwm5l1-ats.iot.us-east-1.amazonaws.com' }
 close event fired
 reconnect event fired
@@ -112,9 +112,6 @@ reconnect event fired
 connect event fired
 setting device's tenantId attribute to jitp-test-tenant
 creating the device's shadow with its initial state
-attaching new policy to device cert { policyName: 'dta-7d602774-fb6d-4de6-8a13-6de5ebe0dbf1',
-  policyDocument:
-   '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["iot:UpdateThingShadow"],"Resource":["arn:aws:iot:*:*:$aws/things/nrf-jitp-123456789012347-123456/shadow/update"]},{"Effect":"Allow","Action":["iot:Subscribe"],"Resource":["arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted","arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/accepted","arn:aws:iot:*:*:topicfilter/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/delta","arn:aws:iot:*:*:topicfilter/dev/jitp-test-tenant/m/*"]},{"Effect":"Allow","Action":["iot:Publish"],"Resource":["arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/get","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update","arn:aws:iot:*:*:topic/dev/jitp-test-tenant/m/*"]},{"Effect":"Allow","Action":["iot:Receive"],"Resource":["arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/accepted","arn:aws:iot:*:*:topic/$aws/things/nrf-jitp-123456789012347-123456/shadow/update/delta","arn:aws:iot:*:*:topic/dev/jitp-test-tenant/m/*"]}]}' }
 close event fired
 reconnect event fired
 connect event fired
@@ -129,16 +126,23 @@ publishing hello message
 message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
 { state: { reported: { pairing: { state: 'paired' } } },
   metadata:
-   { reported: { pairing: { state: { timestamp: 1553895318 } } } },
-  version: 39,
-  timestamp: 1553895324 }
+   { reported: { pairing: { state: { timestamp: 1554530691 } } } },
+  version: 23,
+  timestamp: 1554530697 }
 message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
 { state: { reported: { pairing: { state: 'paired' } } },
   metadata:
-   { reported: { pairing: { state: { timestamp: 1553895318 } } } },
-  version: 39,
-  timestamp: 1553895324 }
-close event fired
+   { reported: { pairing: { state: { timestamp: 1554530691 } } } },
+  version: 23,
+  timestamp: 1554530697 }
+message received on dev/jitp-test-tenant/m/test/topic:
+{ device: 'nrf-jitp-123456789012347-123456',
+  success: 'Hello from my computer-cum-IoT-device!',
+  timestamp: 1554530696974 }
+message received on dev/jitp-test-tenant/m/test/topic:
+{ device: 'nrf-jitp-123456789012347-123456',
+  success: 'Hello from my computer-cum-IoT-device!',
+  timestamp: 1554530697101 }
 ```
 *Note*: It is currently unclear why the `subscribe` events fire twice, which leads to receiving duplicate messages.
 
