@@ -39,7 +39,7 @@
       "policy": {
         "Type": "AWS::IoT::Policy",
         "Properties": {
-          "PolicyName": "JITPIoTAccess"
+          "PolicyName": "JITPIoTConnectPolicy"
         }
       }
     }

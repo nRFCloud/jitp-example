@@ -16,8 +16,49 @@ const config = {
   keyPath: 'deviceCert.key',
   certPath: 'deviceCertAndCACert.crt',
   caPath: 'AmazonRootCA1.pem',
-  // This does not have to be the Thing Id or Thing Name. It should just be a unique identifier.
-  clientId: uuid(),
+  // This does not have to be the Thing Id or Thing Name unless you 
+  // are using a policy statement for iot:Connect (as we are), which 
+  // requires the MQTT client id to match either:
+  //
+  // 1) the id of the device that is holding the certificate used to 
+  // establish the TLS connection. This is the meaning of the Condition, 
+  // below: that the ClientId of the MQTT resource connecting to AWS 
+  // matches the Thing to which the certificate used for connection is 
+  // attached:
+  //
+  // "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
+  // {
+  //   "Effect": "Allow",
+  //   "Action": [
+  //     "iot:Connect"
+  //   ],
+  //   "Resource": "arn:aws:iot:*:*:client/${iot:ClientId}",
+  //   "Condition": {
+  //     "Bool": {
+  //       "iot:Connection.Thing.IsAttached": [
+  //         true
+  //       ]
+  //     }
+  //   }
+  // } 
+  //  
+  // 2) a value contained in the cert. This is a more terse way of 
+  // requiring that the MQTT client id must match something about the 
+  // certificate holder. This is what this project uses, for we store
+  // the device id (ThingName) in the cert's subject CommonName (CN)
+  // field. Thus we use this simpler policy statement instead:
+  //
+  // {
+  //   "Effect": "Allow",
+  //   "Action": [
+  //     "iot:Connect"
+  //   ],
+  //   "Resource": "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
+  // } 
+  // 
+  // Try changing this to a value other than deviceId and you'll see that 
+  // you cannot connect.
+  clientId: deviceId, 
   host: mqttEndpoint,
 };
 
@@ -111,73 +152,6 @@ const associateDeviceWithTenant = async () => {
           },
         },
       }),
-    })
-    .promise();
-
-  const policyName = `dta-${uuid()}`;
-  // See https://docs.aws.amazon.com/iot/latest/developerguide/pub-sub-policy.html and
-  // https://docs.aws.amazon.com/iot/latest/developerguide/device-shadow-mqtt.html#get-accepted-pub-sub-topic
-  // 
-  // Note that attempting to subscribe (in the code above) to a topic that is not properly set in the iot:Subscribe
-  // Resource section below will prevent the device from receiving *any* messages because an unauthorized 
-  // subscription attempt causes the MQTT client to disconnect and attempt reconnect:
-  // https://github.com/aws/aws-iot-device-sdk-js/issues/191
-  const policy = {
-    policyName,
-    policyDocument: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Action: ['iot:UpdateThingShadow'],
-          Resource: [`arn:aws:iot:*:*:$aws/things/${deviceId}/shadow/update`],
-        },
-        {
-          Effect: 'Allow',
-          Action: ['iot:Subscribe'],
-          Resource: [
-            `arn:aws:iot:*:*:topicfilter/$aws/things/${deviceId}/shadow/get/accepted`,
-            `arn:aws:iot:*:*:topicfilter/$aws/things/${deviceId}/shadow/update/accepted`,
-            `arn:aws:iot:*:*:topicfilter/$aws/things/${deviceId}/shadow/update/delta`,
-            `arn:aws:iot:*:*:topicfilter/${stage}/${tenantId}/m/*`,
-          ],
-        },
-        {
-          Effect: 'Allow',
-          Action: ['iot:Publish'],
-          Resource: [
-            `arn:aws:iot:*:*:topic/$aws/things/${deviceId}/shadow/get`,
-            `arn:aws:iot:*:*:topic/$aws/things/${deviceId}/shadow/update`,
-            `arn:aws:iot:*:*:topic/${stage}/${tenantId}/m/*`,
-          ],
-        },
-        {
-          Effect: 'Allow',
-          Action: ['iot:Receive'],
-          Resource: [
-            `arn:aws:iot:*:*:topic/$aws/things/${deviceId}/shadow/get/accepted`,
-            `arn:aws:iot:*:*:topic/$aws/things/${deviceId}/shadow/update/accepted`,
-            `arn:aws:iot:*:*:topic/$aws/things/${deviceId}/shadow/update/delta`,
-            `arn:aws:iot:*:*:topic/${stage}/${tenantId}/m/*`,
-          ],
-        },
-      ],
-    }),
-  };
-
-  await iot.createPolicy(policy).promise();
-
-  const res = await iot
-    .listThingPrincipals({
-      thingName: deviceId,
-    })
-    .promise();
-
-  console.log('attaching new policy to device cert', policy);
-  await iot
-    .attachPolicy({
-      policyName,
-      target: res.principals[0],
     })
     .promise();
 };

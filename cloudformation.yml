@@ -19,10 +19,10 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration
         - arn:aws:iam::aws:policy/service-role/AWSIoTLogging
         - arn:aws:iam::aws:policy/service-role/AWSIoTRuleActions
-  JITPIoTAccess:
+  JITPIoTConnectPolicy:
     Type: "AWS::IoT::Policy"
     Properties:
-      PolicyName: JITPIoTAccess
+      PolicyName: JITPIoTConnectPolicy
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -31,13 +31,9 @@ Resources:
             Action:
               - "iot:Connect"
             Effect: Allow
-            Resource: "*"
-          -
-            Sid: GetShadow
-            Action:
-              - "iot:GetThingShadow"
-            Effect: Allow
-            Resource: { "Fn::Join" : [ "", ["arn:aws:iot:",{ "Fn::Sub": "${AWS::Region}" },":", { "Fn::Sub": "${AWS::AccountId}" }, ":$aws/things/${iot:Certificate.Subject.CommonName}/shadow/get"]] }
+            # Require the MQTT client id to match the device id stored in the CommonName (CN) field of the cert.
+            # For more on this see comments in scripts/connect-and-publish.js.
+            Resource: "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
   # The resources from here down are only needed if you want to use a custom ThingType when provisioning your device. 
   # The custom ThingType is what we put in the device cert's OU subject field.
   WriteToIotPolicy:
@@ -87,7 +83,6 @@ Resources:
         searchableAttributes:
         - tenantId
         - stage
-        - blocked
   CreateThingType:
     Type: AWS::Lambda::Function
     Properties:
@@ -151,48 +146,34 @@ Resources:
         thingGroupDescription: JITP devices
       policyName: !Ref JITPThingGroupPolicy 
   JITPThingGroupPolicy:
-    Type: AWS::IoT::Policy
+    Type: "AWS::IoT::Policy"
     Properties:
+      PolicyName: JITPThingGroupPolicy
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Action:
-          - iot:Connect
-          Resource:
-          - arn:aws:iot:*:*:client/${iot:ClientId}
-          Condition:
-            Bool:
-              iot:Connection.Thing.IsAttached:
-              - 'true'
-            StringNotEquals:
-              iot:Connection.Thing.Attributes[blocked]:
-              - '1'
-        - Effect: Allow
-          Action:
-          - iot:Receive
-          Resource:
-          - "*"
-        - Effect: Allow
-          Action:
-          - iot:UpdateThingShadow
-          - iot:GetThingShadow
-          Resource:
-          - arn:aws:iot:*:*:thing/${iot:ClientId}
-        - Effect: Allow
-          Action:
-          - iot:Subscribe
-          Resource:
-          - !Sub "arn:aws:iot:*:*:topicfilter/${Stage}/${!iot:Connection.Thing.Attributes[tenantId]}/m/*"
-          - arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/get/*
-          - arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/update/*
-        - Effect: Allow
-          Action:
-          - iot:Publish
-          Resource:
-          - !Sub "arn:aws:iot:*:*:topic/${Stage}/${!iot:Connection.Thing.Attributes[tenantId]}/m/*"
-          - arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/get
-          - arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/update
+          - 
+            Action:
+              - "iot:Subscribe"
+            Effect: Allow
+            Resource:
+              - "arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/get/accepted"
+              - "arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/update/accepted"
+              - "arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/update/delta"
+              - "arn:aws:iot:*:*:topicfilter/${iot:Connection.Thing.Attributes[stage]}/${iot:Connection.Thing.Attributes[tenantId]}/m/*"
+          - 
+            Action: 
+              - "iot:Publish"
+            Effect: "Allow"
+            Resource:
+              - "arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/get"
+              - "arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/update"
+              - "arn:aws:iot:*:*:topic/${iot:Connection.Thing.Attributes[stage]}/${iot:Connection.Thing.Attributes[tenantId]}/m/*"
+          -
+            Action: 
+              - "iot:Receive"
+            Effect: "Allow"
+            Resource: "*"
   CreateThingGroup:
     Type: AWS::Lambda::Function
     Properties:
