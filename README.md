@@ -107,8 +107,6 @@ iotSDK.device config for device nrf-jitp-123456789012347-123456:
   host: 'a3riv5t9cwm5l1-ats.iot.us-east-1.amazonaws.com' }
 close event fired
 reconnect event fired
-close event fired
-reconnect event fired
 connect event fired
 setting device's tenantId attribute to jitp-test-tenant
 creating the device's shadow with its initial state
@@ -117,32 +115,34 @@ reconnect event fired
 connect event fired
 subscribed to $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted
 publishing empty message to retrieve shadow
+subscribed to dev/jitp-test-tenant/m/test/topic
+publishing hello message
 subscribed to $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted
 publishing empty message to retrieve shadow
 subscribed to dev/jitp-test-tenant/m/test/topic
 publishing hello message
-subscribed to dev/jitp-test-tenant/m/test/topic
-publishing hello message
 message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
-{ state: { reported: { pairing: { state: 'paired' } } },
+{ state:
+   { reported: { nrfcloud_mqtt_topic_prefix: 'dev/jitp-test-tenant/m' } },
   metadata:
-   { reported: { pairing: { state: { timestamp: 1554530691 } } } },
-  version: 23,
-  timestamp: 1554530697 }
-message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
-{ state: { reported: { pairing: { state: 'paired' } } },
-  metadata:
-   { reported: { pairing: { state: { timestamp: 1554530691 } } } },
-  version: 23,
-  timestamp: 1554530697 }
+   { reported: { nrfcloud_mqtt_topic_prefix: { timestamp: 1554531848 } } },
+  version: 28,
+  timestamp: 1554531851 }
 message received on dev/jitp-test-tenant/m/test/topic:
 { device: 'nrf-jitp-123456789012347-123456',
   success: 'Hello from my computer-cum-IoT-device!',
-  timestamp: 1554530696974 }
+  timestamp: 1554531851184 }
+message received on $aws/things/nrf-jitp-123456789012347-123456/shadow/get/accepted:
+{ state:
+   { reported: { nrfcloud_mqtt_topic_prefix: 'dev/jitp-test-tenant/m' } },
+  metadata:
+   { reported: { nrfcloud_mqtt_topic_prefix: { timestamp: 1554531848 } } },
+  version: 28,
+  timestamp: 1554531852 }
 message received on dev/jitp-test-tenant/m/test/topic:
 { device: 'nrf-jitp-123456789012347-123456',
   success: 'Hello from my computer-cum-IoT-device!',
-  timestamp: 1554530697101 }
+  timestamp: 1554531851342 }
 ```
 *Note*: It is currently unclear why the `subscribe` events fire twice, which leads to receiving duplicate messages.
 

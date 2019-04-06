@@ -146,9 +146,7 @@ const associateDeviceWithTenant = async () => {
       payload: JSON.stringify({
         state: {
           reported: {
-            pairing: {
-              state: 'paired',
-            },
+            nrfcloud_mqtt_topic_prefix: `${stage}/${tenantId}/m`,
           },
         },
       }),
