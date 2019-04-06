@@ -23,7 +23,7 @@ This next script generates the JSON for a [provisioning template](https://docs.a
 Set the `JITP_ROLE_ARN` environment variable to the IotProvisioningRole value in your jitp stack's Outputs tab.
 
 ```
-JITP_ROLE_ARN=YOUR_STACK_OUTPUT_VALUE STAGE=$STAGE node scripts/create-template-json.js
+JITP_ROLE_ARN=<your_stack_output_value> STAGE=$STAGE node scripts/create-template-json.js
 ```
 
 ## Generate an Intermediate CA Cert and Register it with AWS IoT
@@ -63,7 +63,7 @@ aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --veri
 If you want to see details about the CA cert, including its associated JITP template, run the following:
 
 ```
-aws iot describe-ca-certificate --certificate-id YOUR_CERTIFICATE_ID_FROM_REGISTRATION
+aws iot describe-ca-certificate --certificate-id <your_ca_cert_id_from_registration>
 ```
 
 ## Generate a Certificate for Your Device
