@@ -1,7 +1,6 @@
 const AWS = require('aws-sdk');
 const iot = new AWS.Iot();
-const tenantId = 'jitp-test-tenant';
-const deviceId = 'nrf-jitp-123456789012347-123456';
+const deviceId = process.env.DEVICE_ID;
 
 (async () => {
   const res = await iot
