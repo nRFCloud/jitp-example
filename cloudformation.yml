@@ -34,8 +34,9 @@ Resources:
             # Require the MQTT client id to match the device id stored in the CommonName (CN) field of the cert.
             # For more on this see comments in scripts/connect-and-publish.js.
             Resource: "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
-  # The resources from here down are only needed if you want to use a custom ThingType when provisioning your device. 
-  # The custom ThingType is what we put in the device cert's OU subject field.
+  # The resources from here down are only needed if you want to use a custom ThingType or ThingGroup when provisioning your device. 
+  # The custom ThingType is what we put in the device cert's OU subject field. The custom ThingGroup is what we put in the device 
+  # cert's dnQualifier field.
   WriteToIotPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -60,95 +61,27 @@ Resources:
           - logs:CreateLogStream
           - logs:PutLogEvents
           Resource: "arn:aws:logs:*:*:*"
-  ManageThingTypesPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Allows managing ThingTypes
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Action:
-          - iot:CreateThingType
-          - iot:DeleteThingType
-          Resource: "*"  
-  JITPThingType:
-    Type: Custom::ThingType
-    Version: 1.0  
-    Properties:
-      ServiceToken: !GetAtt CreateThingType.Arn
-      thingTypeName: !Sub "${AWS::StackName}-demo"
-      thingTypeProperties:
-        thingTypeDescription: JITP devices
-        searchableAttributes:
-        - tenantId
-        - stage
-  CreateThingType:
-    Type: AWS::Lambda::Function
-    Properties:
-      Description: Manages the IoT Thing Groups through custom CloudFormation resources
-      Code:
-        ZipFile: >
-          const { Iot } = require('aws-sdk');
-          const response = require('cfn-response');
-          const iot = new Iot();
-          exports.handler = (event, context) => {
-            const { RequestType, ResourceProperties: { thingTypeName, thingTypeProperties } } = event;
-            let p = Promise.resolve();
-            switch (RequestType) {
-              case 'Create':
-                p = iot.createThingType({thingTypeName, thingTypeProperties}).promise()
-                break
-              case 'Delete':
-                p = iot
-                    .deprecateThingType({
-                      thingTypeName,
-                    })
-                    .promise()
-                break
-            }
-            p.then(() => {
-              response.send(event, context, response.SUCCESS, { thingTypeName }, false, thingTypeName);
-            })
-            .catch(err => {
-              response.send(event, context, response.FAILED, { Error: `${err.message}  (${err})` })
-            })
-          };
-      Handler: index.handler
-      Runtime: nodejs8.10
-      Timeout: 60
-      Role: !GetAtt CreateThingTypeRole.Arn
-  CreateThingTypeRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      ManagedPolicyArns:
-      - !Ref ManageThingTypesPolicy
-      - !Ref WriteToCloudWatchLogsPolicy
-      - !Ref WriteToIotPolicy
-  # The resources from here down are only needed if you want to use a custom ThingGroup when provisioning your device. 
-  # The custom ThingGroup is what we put in the device cert's dnQualifier subject field.
-  JITPThingGroup:
+  MyJITPTestThingGroup:
     Type: Custom::ThingGroup
     Version: 1.0
     Properties:
       ServiceToken: !GetAtt CreateThingGroup.Arn
-      thingGroupName: !Sub "${AWS::StackName}"
+      thingGroupName: !Sub "${AWS::StackName}-MyJITPTestThingGroup"
       thingGroupProperties:
-        thingGroupDescription: JITP devices
-      policyName: !Ref JITPThingGroupPolicy 
-  JITPThingGroupPolicy:
+        thingGroupDescription: JITP test devices
+  AssociatedThingGroup:
+    Type: Custom::ThingGroup
+    Version: 1.0
+    Properties:
+      ServiceToken: !GetAtt CreateThingGroup.Arn
+      thingGroupName: !Sub "${AWS::StackName}-AssociatedThingGroup"
+      thingGroupProperties:
+        thingGroupDescription: Associated devices
+      policyName: !Ref AssociatedThingGroupPolicy 
+  AssociatedThingGroupPolicy:
     Type: "AWS::IoT::Policy"
     Properties:
-      PolicyName: JITPThingGroupPolicy
+      PolicyName: AssociatedThingGroupPolicy
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -189,7 +122,12 @@ Resources:
             switch (RequestType) {
               case 'Create':
                 p = iot.createThingGroup({thingGroupName, thingGroupProperties}).promise()
-                  .then(({thingGroupArn}) => iot.attachPolicy({policyName, target: thingGroupArn}).promise())
+                  .then(({thingGroupArn}) => { 
+                    if (policyName) { 
+                      return iot.attachPolicy({policyName, target: thingGroupArn}).promise() 
+                    }; 
+                    return Promise.resolve() 
+                  });
                 break
               case 'Delete':
                 // Delete all Things in Group
@@ -277,17 +215,23 @@ Parameters:
     ConstraintDescription: must specify "dev", "beta", or "prod"
 Outputs:
   IoTProvisioningRole:
-    Description: the IAM role that allows IoT provisioning
+    Description: the ARN of the IAM role that allows IoT provisioning
     Value: !GetAtt IoTProvisioningRole.Arn 
     Export:
-      Name: IoTProvisioningRole  
-  JITPThingType:
-    Description: The name of the thing type for JITP devices
-    Value: !GetAtt JITPThingType.thingTypeName
-    Export:
-      Name: !Sub "${AWS::StackName}-CustomThingType"
-  JITPThingGroup:
+      Name: !Sub "${AWS::StackName}-IoTProvisioningRole"
+  MyJITPTestThingGroup:
     Description: The name of the thing group for JITP devices
-    Value: !GetAtt JITPThingGroup.thingGroupName
+    Value: !GetAtt MyJITPTestThingGroup.thingGroupName
     Export:
-      Name: !Sub "${AWS::StackName}-CustomThingGroup"      
+      Name: !Sub "${AWS::StackName}-MyJITPTestThingGroup"
+  JITPIoTConnectPolicy:
+    Description: the IoT policy attached to the device cert during JITP
+    Value: !Ref JITPIoTConnectPolicy
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-JITPIoTConnectPolicy"            
+  AssociatedThingGroup:
+    Description: The name of the thing group for associated devices
+    Value: !GetAtt AssociatedThingGroup.thingGroupName
+    Export:
+      Name: !Sub "${AWS::StackName}-AssociatedThingGroup"      

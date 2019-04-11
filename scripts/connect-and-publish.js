@@ -9,7 +9,7 @@ const iotData = new AWS.IotData({
   endpoint: mqttEndpoint,
   region: process.env.REGION || 'us-east-1',
 });
-const deviceId = 'nrf-jitp-123456789012347-123456';
+const deviceId = process.env.DEVICE_ID;
 const shadowTopic = `$aws/things/${deviceId}/shadow`;
 const messageTopic = `${stage}/${tenantId}/m/test/topic`;
 const config = {
@@ -123,6 +123,7 @@ const associateDeviceWithTenant = async () => {
     deviceDescription.attributes &&
     deviceDescription.attributes['tenantId']
   ) {
+    console.log("device is already associated", tenantId);
     return;
   }
 
@@ -152,4 +153,12 @@ const associateDeviceWithTenant = async () => {
       }),
     })
     .promise();
+
+  console.log("adding the thing to the ASSOCIATED_THING_GROUP so that the updated policy granting increased permissions is attached");
+  await iot
+    .addThingToThingGroup({
+      thingName: deviceId,
+      thingGroupName: process.env.ASSOCIATED_THING_GROUP,
+    })
+    .promise();    
 };

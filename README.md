@@ -13,17 +13,25 @@ Install the dependencies and create the AWS resources needed to support JITP:
 ```
 npm i
 STAGE=dev
-aws cloudformation create-stack --stack-name nordic-jitp --template-body file://./cloudformation.yml \
+STACK_NAME=nordic-jitp
+aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://./cloudformation.yml \
     --parameters ParameterKey=Stage,ParameterValue=$STAGE \
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
 This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `JITPIoTConnectPolicy` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
 
-Set the `JITP_ROLE_ARN` environment variable to the IotProvisioningRole value in your jitp stack's Outputs tab.
+Set the environment variables to values in your jitp stack's Outputs:
 
 ```
-JITP_ROLE_ARN=<your_stack_output_value> STAGE=$STAGE node scripts/create-template-json.js
+export JITP_TEST_THING_GROUP=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME MyJITPTestThingGroup)
+export JITP_ROLE_ARN=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME IoTProvisioningRole)
+export JITP_CONNECT_POLICY=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME JITPIoTConnectPolicy)
+export ASSOCIATED_THING_GROUP=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME AssociatedThingGroup)
+```
+Generate the JITP provisioning template JSON:
+```
+export PROVISIONING_TEMPLATE=$(node scripts/create-provisioning-template-json.js)
 ```
 
 ## Generate an Intermediate CA Cert and Register it with AWS IoT
@@ -44,10 +52,10 @@ CA_FILE_NAME=NordicCA
 
 openssl genrsa -out $PATH_TO_PROJECT/$CA_FILE_NAME.key 2048
 openssl req -x509 -new -nodes -key $CA_FILE_NAME.key -sha256 -days 1024 -out $CA_FILE_NAME.pem \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=R&D"
+    -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=R&D"
 openssl genrsa -out $PATH_TO_PROJECT/verificationCert.key 2048
 openssl req -new -key $PATH_TO_PROJECT/verificationCert.key -out $PATH_TO_PROJECT/verificationCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=R&D/CN=$REGISTRATION_CODE"
+    -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=R&D/CN=$REGISTRATION_CODE"
 openssl x509 -req -in $PATH_TO_PROJECT/verificationCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
     -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/verificationCert.pem -days 500 -sha256
 ```
@@ -57,7 +65,7 @@ You should now have 6 new files: a .key, .pem and .srl named after `CA_FILE_NAME
 Run the following to register the CA cert with AWS IoT:
 
 ```
-aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://provisioning-template.json
+aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://$PROVISIONING_TEMPLATE
 ```
 
 If you want to see details about the CA cert, including its associated JITP template, run the following:
@@ -72,14 +80,15 @@ Now it's time to generate some certs for your computer (soon to be acting as an 
 
 We use the `-subj` argument to pass in values declared in the [provisioning template](https://github.com/nRFCloud/jitp-example/blob/master/provisioning-template.js). The parameters supported by AWS are [listed here](https://docs.aws.amazon.com/iot/latest/developerguide/jit-provisioning.html). 
 
-In our case, `OU` is the value for the `ThingTypeName` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the `ThingGroupName` parameter. `WARNING`: you can only use a `ThingType` or `ThingGroup` name that is registered with AWS IoT. Otherwise, JITP will fail, and rather silently.
+In our case, `OU` is the value for the `ThingGroup` parameter, `CN` is the value for the `ThingName` (device Id) parameter, and `dnQualifier` is the value for the device tenant association (DTA) PIN. `WARNING`: you can only use a `ThingGroup` that is registered with AWS IoT. Otherwise, JITP will fail, and rather silently.
 
 ```
-DEVICE_ID=nrf-jitp-123456789012347-123456
+DEVICE_ID=nrf-jitp-123456789012347
+DTA_PIN=123456
 
 openssl genrsa -out $PATH_TO_PROJECT/deviceCert.key 2048
 openssl req -new -key $PATH_TO_PROJECT/deviceCert.key -out $PATH_TO_PROJECT/deviceCert.csr \
-    -subj "/C=US/ST=Oregon/L=Portland/O=Nordic Semiconductor/OU=nordic-jitp-demo/CN=$DEVICE_ID/dnQualifier=nordic-jitp"
+    -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=$JITP_TEST_THING_GROUP/CN=$DEVICE_ID/dnQualifier=$DTA_PIN"
 openssl x509 -req -in $PATH_TO_PROJECT/deviceCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
     -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/deviceCert.crt -days 365 -sha256
 cat deviceCert.crt $CA_FILE_NAME.pem > deviceCertAndCACert.crt
