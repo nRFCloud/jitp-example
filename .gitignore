@@ -1,7 +1,7 @@
 node_modules/
 provisioning-template.json
-deviceCertAndCACert.crt
-deviceCert.*
-verificationCert.*
+deviceAndCA.crt
+device.*
+verification.*
 NordicCA.*
 .env

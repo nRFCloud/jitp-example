@@ -53,19 +53,19 @@ CA_FILE_NAME=NordicCA
 openssl genrsa -out $PATH_TO_PROJECT/$CA_FILE_NAME.key 2048
 openssl req -x509 -new -nodes -key $CA_FILE_NAME.key -sha256 -days 1024 -out $CA_FILE_NAME.pem \
     -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=R&D"
-openssl genrsa -out $PATH_TO_PROJECT/verificationCert.key 2048
-openssl req -new -key $PATH_TO_PROJECT/verificationCert.key -out $PATH_TO_PROJECT/verificationCert.csr \
+openssl genrsa -out $PATH_TO_PROJECT/verification.key 2048
+openssl req -new -key $PATH_TO_PROJECT/verification.key -out $PATH_TO_PROJECT/verification.csr \
     -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=R&D/CN=$REGISTRATION_CODE"
-openssl x509 -req -in $PATH_TO_PROJECT/verificationCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
-    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/verificationCert.pem -days 500 -sha256
+openssl x509 -req -in $PATH_TO_PROJECT/verification.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
+    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/verification.pem -days 500 -sha256
 ```
 
-You should now have 6 new files: a .key, .pem and .srl named after `CA_FILE_NAME`, as well as verificationCert.csr, verificationCert.key and verificationCert.pem.
+You should now have 6 new files: a .key, .pem and .srl named after `CA_FILE_NAME`, as well as verification.csr, verification.key and verification.pem.
 
 Run the following to register the CA cert with AWS IoT:
 
 ```
-aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verificationCert.pem --set-as-active --allow-auto-registration --registration-config file://$PROVISIONING_TEMPLATE
+aws iot register-ca-certificate --ca-certificate file://$CA_FILE_NAME.pem --verification-cert file://verification.pem --set-as-active --allow-auto-registration --registration-config file://$PROVISIONING_TEMPLATE
 ```
 
 If you want to see details about the CA cert, including its associated JITP template, run the following:
@@ -86,15 +86,15 @@ In our case, `OU` is the value for the `ThingGroup` parameter, `CN` is the value
 DEVICE_ID=nrf-jitp-123456789012347
 DTA_PIN=123456
 
-openssl genrsa -out $PATH_TO_PROJECT/deviceCert.key 2048
-openssl req -new -key $PATH_TO_PROJECT/deviceCert.key -out $PATH_TO_PROJECT/deviceCert.csr \
+openssl genrsa -out $PATH_TO_PROJECT/device.key 2048
+openssl req -new -key $PATH_TO_PROJECT/device.key -out $PATH_TO_PROJECT/device.csr \
     -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=$JITP_TEST_THING_GROUP/CN=$DEVICE_ID/dnQualifier=$DTA_PIN"
-openssl x509 -req -in $PATH_TO_PROJECT/deviceCert.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
-    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/deviceCert.crt -days 365 -sha256
-cat deviceCert.crt $CA_FILE_NAME.pem > deviceCertAndCACert.crt
+openssl x509 -req -in $PATH_TO_PROJECT/device.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
+    -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/device.crt -days 365 -sha256
+cat device.crt $CA_FILE_NAME.pem > deviceAndCA.crt
 ```
 
-You should now have four new files: deviceCert.crt, deviceCert.csr, deviceCert.key and deviceCertAndCACert.crt.
+You should now have four new files: device.crt, device.csr, device.key and deviceAndCA.crt.
 
 ## Connect Your Device to AWS IoT
 
@@ -109,8 +109,8 @@ You should see something like the following in your terminal:
 
 ```
 iotSDK.device config for device nrf-jitp-123456789012347-123456:
- { keyPath: 'deviceCert.key',
-  certPath: 'deviceCertAndCACert.crt',
+ { keyPath: 'device.key',
+  certPath: 'deviceAndCA.crt',
   caPath: 'AmazonRootCA1.pem',
   clientId: 'nrf-jitp-123456789012347-123456',
   host: 'a3riv5t9cwm5l1-ats.iot.us-east-1.amazonaws.com' }
@@ -157,7 +157,7 @@ message received on dev/jitp-test-tenant/m/test/topic:
 
 You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
 
-You might also be interested to know that the contents of the deviceCert.crt file you generated is now stored on AWS IoT. You can verify this by running the following, substituting `your-device-certificate-id` with your device's cert id, which you can get from your Thing's page on AWS IoT (click its Security menu item, then click the certificate):
+You might also be interested to know that the contents of the device.crt file you generated is now stored on AWS IoT. You can verify this by running the following, substituting `your-device-certificate-id` with your device's cert id, which you can get from your Thing's page on AWS IoT (click its Security menu item, then click the certificate):
 
 ```
 aws iot describe-certificate --certificate-id <your-device-certificate-id>

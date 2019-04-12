@@ -1,16 +1,24 @@
 {
-  "name": "jtip",
-  "version": "1.0.0",
-  "description": "https://docs.aws.amazon.com/iot/latest/developerguide/diagnosing-connectivity-issues.html `openssl s_client -connect a2n7tk1kp18wix.iot.us-east-1.amazonaws.com:8883 -CAfile root.cert -cert deviceCertAndCACert.crt -key deviceCert.key` `openssl s_client -connect a2n7tk1kp18wix.iot.us-east-1.amazonaws.com:8883 -CAfile rootCA.pem -cert deviceCert.crt -key deviceCert.key`",
-  "main": "create-template-json.js",
+  "name": "jitp-example",
+  "version": "1.0.1",
+  "description": "Demonstrate JITP and Association of a Device with a Tenant on AWS",
+  "main": "scripts/connect-and-publish.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prettier": "prettier --write './*/*.js'",
     "connect": "node scripts/connect-and-publish.js",
     "delete-device": "node scripts/delete-device.js"
   },
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NordicPlayground/jitp-example.git"
+  },
+  "author": "Nordic Semiconductor ASA | nordicsemi.no",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NordicPlayground/jitp-example/issues"
+  },
+  "homepage": "https://github.com/NordicPlayground/jitp-example#readme",
   "dependencies": {
     "aws-iot-device-sdk": "^2.2.1",
     "aws-sdk": "^2.431.0",

@@ -1,6 +1,5 @@
 const AWS = require('aws-sdk');
 const iotSDK = require('aws-iot-device-sdk');
-const uuid = require('uuid');
 const stage = process.env.STAGE || 'dev';
 const tenantId = 'jitp-test-tenant';
 const mqttEndpoint = process.env.MQTT_ENDPOINT;
@@ -13,8 +12,8 @@ const deviceId = process.env.DEVICE_ID;
 const shadowTopic = `$aws/things/${deviceId}/shadow`;
 const messageTopic = `${stage}/${tenantId}/m/test/topic`;
 const config = {
-  keyPath: 'deviceCert.key',
-  certPath: 'deviceCertAndCACert.crt',
+  keyPath: 'device.key',
+  certPath: 'deviceAndCA.crt',
   caPath: 'AmazonRootCA1.pem',
   // This does not have to be the Thing Id or Thing Name unless you 
   // are using a policy statement for iot:Connect (as we are), which 
