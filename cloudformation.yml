@@ -65,7 +65,7 @@ Resources:
     Type: Custom::ThingGroup
     Version: 1.0
     Properties:
-      ServiceToken: !GetAtt CreateThingGroup.Arn
+      ServiceToken: !GetAtt ManageThingGroupsLambda.Arn
       thingGroupName: !Sub "${AWS::StackName}-MyJITPTestThingGroup"
       thingGroupProperties:
         thingGroupDescription: JITP test devices
@@ -73,7 +73,7 @@ Resources:
     Type: Custom::ThingGroup
     Version: 1.0
     Properties:
-      ServiceToken: !GetAtt CreateThingGroup.Arn
+      ServiceToken: !GetAtt ManageThingGroupsLambda.Arn
       thingGroupName: !Sub "${AWS::StackName}-AssociatedThingGroup"
       thingGroupProperties:
         thingGroupDescription: Associated devices
@@ -107,75 +107,114 @@ Resources:
               - "iot:Receive"
             Effect: "Allow"
             Resource: "*"
-  CreateThingGroup:
+  ManageThingGroupsLambda:
     Type: AWS::Lambda::Function
     Properties:
       Description: Manages the IoT Thing Groups through custom CloudFormation resources
       Code:
         ZipFile: >
-          const { Iot } = require('aws-sdk');
-          const response = require('cfn-response');
+          const { Iot } = require("aws-sdk"); 
+          const response = require("cfn-response"); 
+          const util = require("util"); 
+          const sendAsync = util.promisify(response.send); 
           const iot = new Iot();
-          exports.handler = (event, context) => {
-            const { RequestType, ResourceProperties: { thingGroupName, thingGroupProperties, policyName } } = event;
-            let p = Promise.resolve();
-            switch (RequestType) {
-              case 'Create':
-                p = iot.createThingGroup({thingGroupName, thingGroupProperties}).promise()
-                  .then(({thingGroupArn}) => { 
-                    if (policyName) { 
-                      return iot.attachPolicy({policyName, target: thingGroupArn}).promise() 
-                    }; 
-                    return Promise.resolve() 
-                  });
-                break
-              case 'Delete':
-                // Delete all Things in Group
-                p = iot
-                    .listThingsInThingGroup({
-                      thingGroupName,
-                    })
-                    .promise()
-                    .then(({ things }) => Promise.all(things.map(thingName => iot
+
+          exports.handler = async (event, context) => {
+            const {
+              RequestType,
+              ResourceProperties: { thingGroupName, thingGroupProperties, policyName }
+            } = event;
+            console.log(event, thingGroupName, thingGroupProperties, policyName);
+            try {
+              switch (RequestType) {
+                case "Create":
+                  const { thingGroupArn } = await iot
+                    .createThingGroup({ thingGroupName, thingGroupProperties })
+                    .promise();
+                  if (policyName) {
+                    console.log(
+                      `Attaching policy '${policyName}' to thingGroupARN '${thingGroupArn}'.`
+                    );
+                    await iot
+                      .attachPolicy({ policyName, target: thingGroupArn })
+                      .promise();
+                  }
+                  break;
+                case "Delete":
+                  const { things } = await iot
+                    .listThingsInThingGroup({ thingGroupName })
+                    .promise();
+
+                  for (const thingName of things) {
+                    const { principals } = await iot
                       .listThingPrincipals({ thingName })
-                      .promise()
-                      .then(({principals}) => Promise.all(principals.map(principal => iot
-                        .detachThingPrincipal({
-                          thingName,
-                          principal,
-                        })
-                        .promise()
-                        .then(() => {
-                          const certificateId = principal.split('/')[1];
-                          return iot
-                            .updateCertificate({
-                              certificateId,
-                              newStatus: 'INACTIVE',
-                            })
-                            .promise()
-                            .then(() => iot.deleteCertificate({ certificateId }).promise())
-                        })
-                      )))
-                      .then(() => iot.deleteThing({ thingName }).promise())
-                    )))
-                    .then(() => iot.deleteThingGroup({thingGroupName}).promise())
-                break
-            }
-            p.then(() => {
-              response.send(event, context, response.SUCCESS, { thingGroupName }, false, thingGroupName);
-            })
-            .catch(err => {
-              if(err.code === 'ResourceNotFoundException') {
-                response.send(event, context, response.SUCCESS, { thingGroupName }, false, thingGroupName);
-              } else {
-                response.send(event, context, response.FAILED, { Error: `${err.message}  (${err})` })
+                      .promise();
+
+                    if (principals) {
+                      for (const certARN of principals) {
+                        const certificateId = certARN.split("/")[1];
+                        const { policies } = await iot
+                          .listAttachedPolicies({ target: certARN })
+                          .promise();
+                        if (policies) {
+                          for (const policy of policies) {
+                            const policyName = policy.policyName || "";
+                            await iot
+                              .detachPolicy({ policyName, target: certARN })
+                              .promise();
+                          }
+                          await iot
+                            .detachThingPrincipal({ thingName, principal: certARN })
+                            .promise();
+                          await iot
+                            .updateCertificate({ certificateId, newStatus: "INACTIVE" })
+                            .promise();
+                          await iot.deleteCertificate({ certificateId }).promise();
+                        }
+                      }
+
+                      await iot.deleteThing({ thingName }).promise();
+                    }
+                  }
+
+                  await iot.deleteThingGroup({ thingGroupName }).promise();
+                  break;
               }
-            })
+
+              await sendAsync(
+                event,
+                context,
+                response.SUCCESS,
+                { thingGroupName },
+                thingGroupName,
+                false                
+              );
+            } catch (err) {
+              if (err.code === "ResourceNotFoundException") {
+                await sendAsync(
+                  event,
+                  context,
+                  response.SUCCESS,
+                  { thingGroupName },
+                  thingGroupName,
+                  false
+                );
+              } else {
+                await sendAsync(
+                  event,
+                  context,
+                  response.FAILED,
+                  { Error: `${err.message}  (${err})` },
+                  thingGroupName,
+                  false
+                );                
+              }
+            }
           };
       Handler: index.handler
       Runtime: nodejs8.10
       Timeout: 300
-      Role: !GetAtt CreateThingGroupRole.Arn
+      Role: !GetAtt ManageThingGroupsLambdaRole.Arn
   ManageThingGroupsPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -188,7 +227,7 @@ Resources:
           - iot:CreateThingGroup
           - iot:DeleteThingGroup
           Resource: "*"
-  CreateThingGroupRole:
+  ManageThingGroupsLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
