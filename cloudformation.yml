@@ -19,24 +19,6 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSIoTThingsRegistration
         - arn:aws:iam::aws:policy/service-role/AWSIoTLogging
         - arn:aws:iam::aws:policy/service-role/AWSIoTRuleActions
-  JITPIoTConnectPolicy:
-    Type: "AWS::IoT::Policy"
-    Properties:
-      PolicyName: JITPIoTConnectPolicy
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - 
-            Sid: MQTTConnect
-            Action:
-              - "iot:Connect"
-            Effect: Allow
-            # Require the MQTT client id to match the device id stored in the CommonName (CN) field of the cert.
-            # For more on this see comments in scripts/connect-and-publish.js.
-            Resource: "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
-  # The resources from here down are only needed if you want to use a custom ThingType or ThingGroup when provisioning your device. 
-  # The custom ThingType is what we put in the device cert's OU subject field. The custom ThingGroup is what we put in the device 
-  # cert's dnQualifier field.
   WriteToIotPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -60,15 +42,20 @@ Resources:
           - logs:CreateLogGroup
           - logs:CreateLogStream
           - logs:PutLogEvents
-          Resource: "arn:aws:logs:*:*:*"
-  MyJITPTestThingGroup:
+          Resource: "arn:aws:logs:*:*:*"      
+  # Devices are assigned to this group when provisioned on AWS. The policy associated with it 
+  # contains basic permissions for connecting and then retrieving and updating its shadow. That's it.
+  ProvisionedThingGroup:
     Type: Custom::ThingGroup
     Version: 1.0
     Properties:
       ServiceToken: !GetAtt ManageThingGroupsLambda.Arn
-      thingGroupName: !Sub "${AWS::StackName}-MyJITPTestThingGroup"
+      thingGroupName: !Sub "${AWS::StackName}-ProvisionedThingGroup"
       thingGroupProperties:
         thingGroupDescription: JITP test devices
+      policyName: !Ref ProvisionedThingGroupPolicy
+  # Devices are assigned to this group when associated with a tenant. This association affords
+  # a greater set of permissions which are reflected in the policy for this group.
   AssociatedThingGroup:
     Type: Custom::ThingGroup
     Version: 1.0
@@ -78,6 +65,33 @@ Resources:
       thingGroupProperties:
         thingGroupDescription: Associated devices
       policyName: !Ref AssociatedThingGroupPolicy 
+  ProvisionedThingGroupPolicy:
+    Type: "AWS::IoT::Policy"
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Action:
+              - "iot:Connect"
+            Effect: Allow
+            Resource: "arn:aws:iot:*:*:client/${iot:Certificate.Subject.CommonName}"
+          - Action:
+              - "iot:Subscribe"
+            Effect: Allow
+            Resource:
+              - "arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/get/*"
+              - "arn:aws:iot:*:*:topicfilter/$aws/things/${iot:ClientId}/shadow/update/*"
+          - Action:
+              - "iot:Publish"
+            Effect: "Allow"
+            Resource:
+              - "arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/get"
+              - "arn:aws:iot:*:*:topic/$aws/things/${iot:ClientId}/shadow/update"
+          - Action:
+              - "iot:Receive"
+            Effect: "Allow"
+            Resource: "*"    
   AssociatedThingGroupPolicy:
     Type: "AWS::IoT::Policy"
     Properties:
@@ -258,19 +272,13 @@ Outputs:
     Value: !GetAtt IoTProvisioningRole.Arn 
     Export:
       Name: !Sub "${AWS::StackName}-IoTProvisioningRole"
-  MyJITPTestThingGroup:
-    Description: The name of the thing group for JITP devices
-    Value: !GetAtt MyJITPTestThingGroup.thingGroupName
+  ProvisionedThingGroup:
+    Description: The name of the thing group for devices that have been provisioned via JITP but are not yet associated with a tenant.
+    Value: !GetAtt ProvisionedThingGroup.thingGroupName
     Export:
-      Name: !Sub "${AWS::StackName}-MyJITPTestThingGroup"
-  JITPIoTConnectPolicy:
-    Description: the IoT policy attached to the device cert during JITP
-    Value: !Ref JITPIoTConnectPolicy
-    Export:
-      Name:
-        Fn::Sub: "${AWS::StackName}-JITPIoTConnectPolicy"            
+      Name: !Sub "${AWS::StackName}-ProvisionedThingGroup"
   AssociatedThingGroup:
-    Description: The name of the thing group for associated devices
+    Description: The name of the thing group for devices that are associated with a tenant.
     Value: !GetAtt AssociatedThingGroup.thingGroupName
     Export:
       Name: !Sub "${AWS::StackName}-AssociatedThingGroup"      

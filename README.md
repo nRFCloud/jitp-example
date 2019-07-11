@@ -19,14 +19,13 @@ aws cloudformation create-stack --stack-name $STACK_NAME --template-body file://
     --capabilities CAPABILITY_NAMED_IAM
 ```
 
-This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `JITPIoTConnectPolicy` *policy* (which gets attached to each device certificate during provisioning) that are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
+This next script generates the JSON for a [provisioning template](https://docs.aws.amazon.com/iot/latest/developerguide/provision-template.html) from a more readable JSON format. We could have included the final JSON file that AWS expects, but it's hard to read and modify because it's stringified twice. The provisioning template references both the `IoTJITProvisioning` *role* (used by the entire JITP process) and the `ProvisionedThingGroup` *ThingGroup* (which has attached to it the JITP policy that allows member devices to connect to AWS IoT). Both of these are defined in [the CloudFormation template](https://github.com/nRFCloud/jitp-example/blob/master/cloudformation.yml).
 
 Set the environment variables to values in your jitp stack's Outputs:
 
 ```
-export JITP_TEST_THING_GROUP=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME MyJITPTestThingGroup)
 export JITP_ROLE_ARN=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME IoTProvisioningRole)
-export JITP_CONNECT_POLICY=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME JITPIoTConnectPolicy)
+export PROVISIONED_THING_GROUP=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME ProvisionedThingGroup)
 export ASSOCIATED_THING_GROUP=$(npx @nrfcloud/aws-cf-stack-output $STACK_NAME AssociatedThingGroup)
 ```
 Generate the JITP provisioning template JSON:
@@ -88,7 +87,7 @@ DTA_PIN=123456
 
 openssl genrsa -out $PATH_TO_PROJECT/device.key 2048
 openssl req -new -key $PATH_TO_PROJECT/device.key -out $PATH_TO_PROJECT/device.csr \
-    -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=$JITP_TEST_THING_GROUP/CN=$DEVICE_ID/dnQualifier=$DTA_PIN"
+    -subj "/C=NO/ST=Norway/L=Trondheim/O=Nordic Semiconductor/OU=$PROVISIONED_THING_GROUP/CN=$DEVICE_ID/dnQualifier=$DTA_PIN" 
 openssl x509 -req -in $PATH_TO_PROJECT/device.csr -CA $PATH_TO_PROJECT/$CA_FILE_NAME.pem \
     -CAkey $PATH_TO_PROJECT/$CA_FILE_NAME.key -CAcreateserial -out $PATH_TO_PROJECT/device.crt -days 365 -sha256
 cat device.crt $CA_FILE_NAME.pem > deviceAndCA.crt
@@ -155,7 +154,7 @@ message received on dev/jitp-test-tenant/m/test/topic:
 ```
 *Note*: It is currently unclear why the `subscribe` events fire twice, which leads to receiving duplicate messages.
 
-You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there.
+You should also be able to go to the [AWS IoT Manage Things](https://console.aws.amazon.com/iot/home?region=us-east-1#/thinghub) page and see your device there. You can also subscribe to the `$aws/events/#` topic in the AWS IoT Test pane and see the registration and connection events as they come in.
 
 You might also be interested to know that the contents of the device.crt file you generated is now stored on AWS IoT. You can verify this by running the following, substituting `your-device-certificate-id` with your device's cert id, which you can get from your Thing's page on AWS IoT (click its Security menu item, then click the certificate):
 

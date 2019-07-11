@@ -3,18 +3,18 @@ const iot = new AWS.Iot();
 const deviceId = process.env.DEVICE_ID;
 
 (async () => {
-  const res = await iot
+  const { principals } = await iot
     .listThingPrincipals({
       thingName: deviceId,
     })
     .promise();
 
-  if (res.principals) {
+  if (principals) {
     for (const certARN of res.principals) {
       const certificateId = certARN.split('/')[1];
-      const res = await iot.listAttachedPolicies({ target: certARN }).promise();
-      if (res.policies) {
-        for (const p of res.policies) {
+      const { policies } = await iot.listAttachedPolicies({ target: certARN }).promise();
+      if (policies) {
+        for (const p of policies) {
           const policyName = p.policyName || '';
           await iot.detachPolicy({ policyName, target: certARN }).promise();
         }

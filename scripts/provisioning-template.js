@@ -1,11 +1,8 @@
 module.exports = {
-  template: ({ policyName, roleArn, stage }) => ({
+  template: ({ roleArn, stage, thingType, thingGroup }) => ({
     'templateBody': JSON.stringify({
       'Parameters': {
         'AWS::IoT::Certificate::DistinguishedNameQualifier': {
-          'Type': 'String',
-        },
-        'AWS::IoT::Certificate::OrganizationalUnit': {
           'Type': 'String',
         },
         'AWS::IoT::Certificate::CommonName': {
@@ -24,8 +21,9 @@ module.exports = {
             },
             'AttributePayload': {
               stage,
+              thingType,
             },
-            'ThingGroups': [{ 'Ref': 'AWS::IoT::Certificate::OrganizationalUnit' }],
+            'ThingGroups': [thingGroup],
           },
         },
         'certificate': {
@@ -35,12 +33,6 @@ module.exports = {
               'Ref': 'AWS::IoT::Certificate::Id',
             },
             'Status': 'ACTIVE',
-          },
-        },
-        'policy': {
-          'Type': 'AWS::IoT::Policy',
-          'Properties': {
-            'PolicyName': policyName,
           },
         },
       },

@@ -153,7 +153,7 @@ const associateDeviceWithTenant = async () => {
     })
     .promise();
 
-  console.log("adding the thing to the ASSOCIATED_THING_GROUP so that the updated policy granting increased permissions is attached");
+  console.log("adding the thing to the ASSOCIATED_THING_GROUP so that the updated policy containined additional permissions is attached");
   await iot
     .addThingToThingGroup({
       thingName: deviceId,
